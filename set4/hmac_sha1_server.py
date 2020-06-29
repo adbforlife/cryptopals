@@ -33,7 +33,7 @@ success = '''
 '''
 
 server_key = os.urandom(32)
-delay = 0.2
+delay = 0.1
 
 def hmac_sha1(k, m):
     opad = bytes([0x5c for _ in range(64)])
@@ -51,6 +51,7 @@ def bad_comp(expected, reality):
         if expected[i] != reality[i]:
             return False
         time.sleep(delay)
+    return True
 
 class MyHandler(BaseHTTPRequestHandler):
     def _ret_500(self):
