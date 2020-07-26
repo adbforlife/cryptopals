@@ -50,4 +50,4 @@ x = get_priv_from_nonce(guess,r,s,m)
 assert((r,s) == dsa_sign_with_nonce(m,x,guess))
 assert(sha1(hex(x)[2:].encode()) == unhexlify(b'0954edd5e0afe5542a4adf012611a91912a3ec16'))
 print(f'private key is {x}')
-#print(sha1(bytify(x))) 
+

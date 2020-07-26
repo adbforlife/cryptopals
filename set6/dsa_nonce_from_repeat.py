@@ -7,9 +7,6 @@ q = 0xf4f47f05794b256174bba6e9b396a7707e563c5b
 g = 0x5958c9d3898b224b12672c0b98e06c60df923cb8bc999d119458fef538b8fa4046c8db53039db620c094c9fa077ef389b5322a559946a71903f990f1f7e0e025e2d7f7cf494aff1a0470f5b64c36b625a097f1651fe775323556fe00b3608c887892878480e99041be601a62166ca6894bdd41a7054ec89f756ba9fc95302291
 y = 0x2d026f4bf30195ede3a088da85e398ef869611d0f68f0713d51c9c1a3a26c95105d915e2d8cdf26d056b86b8a7b85519b1c23cc3ecdc6062650462e3063bd179c2a6581519f674a61f1d89a1fff27171ebc1b93d4dc57bceb7ae2430f98a6a4d83d8279ee65d71c1203d2c96d65ebbf7cce9d32971c3de5084cce04a2e147821
 
-infos = open('44.txt', 'rb').read().split(b'\n')
-infos = [infos[i:i+4] for i in range(0,len(infos),4)]
-print(len(infos))
 
 
 def dsa_sign(m,x):
@@ -45,15 +42,47 @@ assert(dsa_verify(m, r, s, pub))
 def get_priv_from_nonce(k,r,s,m): 
     return ((s * k - unbytify(sha1(m))) % q) * pow(r, -1, q) % q
 
-m = b'For those that envy a MC it can be hazardous to your health\nSo be friendly, a matter of life and death, just like a etch-a-sketch\n'
-assert(sha1(m) == unhexlify(b'd2d0714f014a9784047eaeccf956520045c45265'))
-r = 548099063082341131477253921760299949438196259240
-s = 857042759984254168557880549501802188789837994940
-for guess in range(pow(2,16)+1):
-    if pow(g, guess, p) % q == r:
-        break
-x = get_priv_from_nonce(guess,r,s,m)
-assert((r,s) == dsa_sign_with_nonce(m,x,guess))
-assert(sha1(hex(x)[2:].encode()) == unhexlify(b'0954edd5e0afe5542a4adf012611a91912a3ec16'))
-print(f'private key is {x}')
-#print(sha1(bytify(x))) 
+
+infos = open('44.txt', 'rb').read().rstrip().split(b'\n')
+infos = [infos[i:i+4] for i in range(0,len(infos),4)]
+def get_num(line):
+    return eval(line.split(b': ')[1])
+def get_msg(line):
+    return line.replace(b'\n', b'').split(b': ')[1]
+def get_hexnum(line):
+    return int(line.split(b': ')[1], 16)
+infos = [(get_msg(infos[i][0]), get_num(infos[i][2]), get_num(infos[i][1]), get_hexnum(infos[i][3])) for i in range(len(infos))]
+
+for info in infos:
+    assert(dsa_verify(info[0], info[1], info[2], y))
+
+def is_correct_k(guess, r):
+    return pow(g, guess, p) % q == r
+
+for i in range(len(infos)):
+    for j in range(i+1, len(infos)):
+        info1 = infos[i]
+        info2 = infos[j]
+        m1 = info1[0]
+        m2 = info2[0]
+        h1 = unbytify(sha1(m1))
+        assert(h1 == info1[3])
+        h2 = unbytify(sha1(m2))
+        assert(h2 == info2[3])
+        r1 = info1[1]
+        r2 = info2[1]
+        s1 = info1[2]
+        s2 = info2[2]
+        try:
+            guess = ((h1 - h2) % q) * pow((s1 - s2) % q, -1, q) % q
+        except:
+            continue
+        if is_correct_k(guess, r1):
+            x = get_priv_from_nonce(guess,r1,s1,m1)
+            assert(sha1(hexlify(bytify(x))) == unhexlify(b'ca8f6f7c66fa362d40760d135b763eb8527d3d52'))
+            print(f'private key is {x}, derived using messages {i} and {j}')
+
+            
+
+
+
