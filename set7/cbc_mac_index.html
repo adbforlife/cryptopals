@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+  <meta charset="utf-8" />
+  <title>CBC MAC Checker</title>
+  <script type="text/javascript" src="https://cdn.rawgit.com/ricmoo/aes-js/e27b99df/index.js"></script>
+</head>
+
+
+<body>
+<p>This is a page for running javascript snippets that CBC-MAC hash to 296b8d7cb78a243dda4d0a61d33bbdd1 only</p>
+<input type="file" name="inputfile" id="inputfile">
+</body>
+
+
+<script>
+
+
+function pad(arr) {
+    padlen = 16 - arr.length % 16;
+    var res = new Uint8Array(padlen + arr.length);
+    for (let i = 0; i < arr.length; i++) {
+        res[i] = arr[i];
+    }
+    for (let i = 0; i < padlen; i++) {
+        res[i + arr.length] = padlen;
+    }
+    return res;
+}
+
+function uint8ToString(uint8arr, callback) {
+    var bb = new Blob([uint8arr]);
+    var f = new FileReader();
+    f.onload = function(e) {
+        callback(e.target.result);
+    };
+    f.readAsText(bb);
+}
+
+var iv = [0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0];
+var key = [89, 69, 76, 76, 79, 87, 32, 83, 85, 66, 77, 65, 82, 73, 78, 69];
+var text = "alert('MZA who was that?');\n\u0004\u0004\u0004\u0004";
+var textBytes = aesjs.utils.utf8.toBytes(text);
+
+var aesCbc = new aesjs.ModeOfOperation.cbc(key, iv);
+var encryptedBytes = aesCbc.encrypt(textBytes);
+var encryptedHex = aesjs.utils.hex.fromBytes(encryptedBytes);
+
+
+document.getElementById('inputfile')
+    .addEventListener('change', function() {
+        var fr = new FileReader();
+        fr.onload= function() {
+            var textBytes = new Uint8Array(fr.result);
+            var paddedBytes = pad(textBytes);
+            var aesCbc = new aesjs.ModeOfOperation.cbc(key, iv);
+            var encBytes = aesCbc.encrypt(paddedBytes);
+            var encHex = aesjs.utils.hex.fromBytes(encBytes);
+            if (encHex.slice(-32) === '296b8d7cb78a243dda4d0a61d33bbdd1') {
+                uint8ToString(textBytes, function(text) {
+                    eval(text);
+                });
+            } else {
+                alert('Does not match');
+            }
+        }
+        fr.readAsArrayBuffer(this.files[0]);
+    })
+
+
+</script>
+</html>
