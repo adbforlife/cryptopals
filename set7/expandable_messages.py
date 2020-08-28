@@ -98,7 +98,7 @@ while True:
         assert(len(res) == len(MSG))
         assert(my_hash(res) == my_hash(MSG))
         print(f'We found second image')
-        print(f'MSG == SECOND_MSG = {MSG == SECOND_MSG}')
+        print(f'MSG == SECOND_MSG = {MSG == res}')
         print(f'hash(MSG) = {my_hash(MSG)}')
         print(f'hash(SECOND_MSG) = {my_hash(res)}')
         exit(0)
