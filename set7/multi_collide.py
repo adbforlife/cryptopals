@@ -59,9 +59,9 @@ for a in collides:
     if guess_h in guesses and guesses[guess_h] != guess:
         print(f'Found collision after {len(guesses)} hashes')
         print(f'x = {guess}')
-        print(f'y = {guess_h}')
+        print(f'y = {guesses[guess_h]}')
         print(f'hash(x) = {big_hash(guess)}')
-        print(f'hash(y) = {big_hash(guess_h)}')
+        print(f'hash(y) = {big_hash(guesses[guess_h])}')
         exit(0)
     else:
         guesses[guess_h] = guess
