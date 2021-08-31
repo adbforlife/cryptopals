@@ -137,14 +137,13 @@ def getAd(v):
 
 def massage(blocks, v):
     assert(len(c) == 16 * 2^17 and len(v) == 128 * 17)
-    def flip(block, b):
-        assert(len(block) == 16 and b >= 0 and b < 128)
-        return long_to_bytes(bytes_to_long(block) ^^ ((1 << 127) >> b)).rjust(16, b'\x00')
+    def flipv(block, bs):
+        assert(len(block) == 16)
+        bs_int = int(''.join(list(map(str, bs))), 2)
+        return long_to_bytes(bytes_to_long(block) ^^ bs_int).rjust(16, b'\x00')
     for i in range(1,18):
         ind = 2^i - 2
-        for j in range(128):
-            if v[(i-1) * 128 + j]:
-                blocks[ind] = flip(blocks[ind], j)
+        blocks[ind] = flipv(blocks[ind], v[(i-1) * 128 : i * 128])
     
 def get_tag(k, c, header, nonce):
     m = AES.new(k, AES.MODE_CTR, nonce=nonce, initial_value=int(2)).decrypt(c)
@@ -158,23 +157,25 @@ assert(TM.nrows() == 128 * 16 and TM.ncols() == 128 * 17)
 NT = TM.right_kernel()
 print('Getting dependency matrix T and its kernel...done')
 
+og_blocks = [c[i:i+16] for i in range(0, len(c), 16)][::-1]
+
 def tryRando():
     v = NT.random_element()
     assert(len(v) == 128 * 17)
-    blocks = [c[i:i+16] for i in range(0, len(c), 16)][::-1]
-    Ad = getAd(v)
-    for i in range(16):
-        for j in range(128):
-            assert(Ad[i,j] == 0)
-
+    #blocks = [c[i:i+16] for i in range(0, len(c), 16)][::-1]
+    blocks = og_blocks.copy()
     massage(blocks, v)
     c2 = b''.join(blocks[::-1])
     assert(len(c2) == len(c))
-    assert(get_tag(key, c2, h, nonce)[:2] == tag[:2])
+    #assert(get_tag(key, c2, h, nonce)[:2] == tag[:2])
     res = gcm_ver_lib(key, c2, tag, h, nonce)
     if not res:
         return None
     else:
+        Ad = getAd(v)
+        for i in range(16):
+            for j in range(128):
+                assert(Ad[i,j] == 0)
         return v, Ad
 
 print('Brute forcing the forgeries...')
@@ -183,21 +184,21 @@ MAT = Matrix(GF(2), 128, 128)
 i = 0
 while True:
     i += 1
-    if i % 20 == 0:
+    if i % 200 == 0:
         print(i)
     res = tryRando()
     if res:
         print('yay')
         v, Ad = res
-        for r in range(len(Ad)):
+        for r in range(16,32):
             if not vector(GF(2), Ad[r]) in MAT.row_space():
                 MAT[curr] = Ad[r]
                 curr += 1
-                if curr == 128:
+                if curr == 127:
                     break
-    if curr == 128:
-        guess = MAT.right_kernel()[0]
-        print(guess)
+        print(curr)
+    if curr == 127:
+        print(MAT.right_kernel().basis())
         H = block_enc(key, bytes(16))
         print(bytes2poly(H).list()) 
         break
