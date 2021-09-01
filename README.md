@@ -1,2 +1,3 @@
 # cryptopals
-En route to falling in love with crypto
+This contains solutions to every problem of <https://cryptopals.com/>, written
+in python3 and sage.
